@@ -1,0 +1,50 @@
+@import "@mariozechner/mini-lit/styles/themes/default.css";
+@source "../node_modules/@mariozechner/mini-lit/dist";
+@import "tailwindcss";
+
+:root {
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.app-shell {
+  background: linear-gradient(to bottom, hsl(var(--background)), color-mix(in oklab, white 92%, hsl(var(--muted)) 8%));
+}
+
+.grid-backdrop {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--border) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--border) 30%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--primary) 2%, white 98%), transparent 44%);
+  background-size: 24px 24px, 24px 24px, auto;
+}
+
+.app-header {
+  background: hsl(var(--card));
+}
+
+.panel {
+  background: color-mix(in oklab, hsl(var(--card)) 98%, white 2%);
+  backdrop-filter: blur(1.5px);
+}
+
+.app-shell .bg-card.text-card-foreground.flex.flex-col {
+  gap: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.app-shell .bg-card.text-card-foreground.flex.flex-col > .px-6 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
