@@ -89,9 +89,14 @@ class MCPClient:
             logger.warning(f"关闭连接时出错: {e}")
 
     async def list_tools(self) -> List[str]:
-        """列出可用工具"""
+        """列出可用工具名称"""
         result = await self.session.list_tools()
         return [t.name for t in result.tools]
+
+    async def list_tools_raw(self) -> List[Dict]:
+        """获取原始工具列表（包含完整定义）"""
+        result = await self.session.list_tools()
+        return result.tools
 
     async def call_tool(self, name: str, args: Dict) -> str:
         """调用工具"""
@@ -159,121 +164,45 @@ class AIClient:
 
 
 # =============================================================================
-# 工具定义（仅写操作 + search）
+# 工具转换函数
 # =============================================================================
 
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "read_memory",
-            "description": "读取指定 URI 的记忆内容。特殊 URI：system://index（全局索引）、system://recent（最近修改）。当你需要在修改前重新确认内容时使用。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "uri": {
-                        "type": "string",
-                        "description": "记忆 URI"
-                    }
-                },
-                "required": ["uri"]
+def _convert_mcp_to_openai_tools(mcp_tools: list) -> list:
+    """
+    将 MCP 工具格式转换为 OpenAI tools 格式
+
+    MCP 格式示例:
+        Tool(name='read_memory', description='...', inputSchema={...})
+
+    OpenAI 格式示例:
+        {"type": "function", "function": {"name": "...", "description": "...", "parameters": {...}}}
+    """
+    openai_tools = []
+
+    for tool in mcp_tools:
+        # MCP tool 可能是对象或字典
+        if hasattr(tool, 'name'):
+            # 对象形式
+            name = tool.name
+            description = tool.description or ""
+            parameters = tool.inputSchema or {}
+        else:
+            # 字典形式
+            name = tool.get("name", "")
+            description = tool.get("description", "")
+            parameters = tool.get("inputSchema", {})
+
+        openai_tool = {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": parameters
             }
         }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "search_memory",
-            "description": "通过关键词搜索记忆内容（子串匹配）。返回匹配的 URI 和内容片段。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "搜索关键词"
-                    },
-                    "domain": {
-                        "type": "string",
-                        "description": "限定搜索域（可选）"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "最大返回数量，默认 10"
-                    }
-                },
-                "required": ["query"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "update_memory",
-            "description": "更新已有记忆。Patch模式: old_string+new_string 精确替换; Append模式: append 追加内容。也可单独更新 priority 和 disclosure。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "uri": {"type": "string", "description": "要更新的记忆 URI"},
-                    "old_string": {"type": "string", "description": "要替换的旧文本（必须唯一匹配）"},
-                    "new_string": {"type": "string", "description": "替换后的新文本"},
-                    "append": {"type": "string", "description": "追加到末尾的文本"},
-                    "priority": {"type": "integer", "description": "新的优先级"},
-                    "disclosure": {"type": "string", "description": "新的触发条件"}
-                },
-                "required": ["uri"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "create_memory",
-            "description": "在父URI下创建新记忆节点。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "parent_uri": {"type": "string", "description": "父节点 URI"},
-                    "content": {"type": "string", "description": "记忆内容"},
-                    "priority": {"type": "integer", "description": "优先级 (0=核心,1=关键,2+=一般)"},
-                    "title": {"type": "string", "description": "节点标题"},
-                    "disclosure": {"type": "string", "description": "触发条件"}
-                },
-                "required": ["parent_uri", "content", "priority"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "delete_memory",
-            "description": "删除指定URI路径（不可逆）。如果是唯一路径，内容永久消失。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "uri": {"type": "string", "description": "要删除的 URI"}
-                },
-                "required": ["uri"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "add_alias",
-            "description": "为已有记忆创建新路径（别名）。同一内容多入口，各自有独立的 priority/disclosure。",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "new_uri": {"type": "string", "description": "新路径"},
-                    "target_uri": {"type": "string", "description": "目标已有URI"},
-                    "priority": {"type": "integer", "description": "新路径的优先级"},
-                    "disclosure": {"type": "string", "description": "新路径的触发条件"}
-                },
-                "required": ["new_uri", "target_uri"]
-            }
-        }
-    }
-]
+        openai_tools.append(openai_tool)
+
+    return openai_tools
 
 
 # =============================================================================
@@ -433,6 +362,7 @@ class HeartbeatAgent:
         self.ai = AIClient()
         self.operations = []
         self.ai_summary = ""  # AI 最终输出的文字报告
+        self.tools: list = []  # 动态获取的 OpenAI 格式工具列表
 
     async def run(self):
         """执行整理"""
@@ -449,8 +379,11 @@ class HeartbeatAgent:
             self.mcp = MCPClient(self.mcp_url)
             await self.mcp.connect()
 
-            tools = await self.mcp.list_tools()
-            logger.info(f"可用 MCP 工具: {', '.join(tools)}")
+            # 获取并转换工具列表
+            mcp_tools = await self.mcp.list_tools_raw()
+            self.tools = _convert_mcp_to_openai_tools(mcp_tools)
+            tool_names = [t.get("function", {}).get("name", "?") for t in self.tools]
+            logger.info(f"可用 MCP 工具 ({len(self.tools)} 个): {', '.join(tool_names)}")
 
             # 2. 预读所有记忆节点
             logger.info("\n📦 开始预读全部记忆节点...")
@@ -510,7 +443,7 @@ class HeartbeatAgent:
             for round_num in range(max_rounds):
                 logger.info(f"\n--- 第 {round_num + 1}/{max_rounds} 轮 ---")
 
-                resp = await self.ai.chat(conversation, TOOLS, temperature=0.4)
+                resp = await self.ai.chat(conversation, self.tools, temperature=0.4)
                 choices = resp.get("choices", [])
                 if not choices:
                     logger.warning("AI 无响应")
@@ -661,8 +594,8 @@ class HeartbeatAgent:
                 logger.info(f"  📋 上次巡检记录: {len(report_raw)} 字符")
             else:
                 logger.info("  📋 无上次巡检记录（首次运行）")
-        except Exception:
-            logger.info("  📋 无上次巡检记录（首次运行）")
+        except Exception as e:
+            logger.info(f"  📋 无上次巡检记录: {e}")
 
         # 读取索引
         index_data = await self.mcp.call_tool("read_memory", {"uri": "system://index"})
