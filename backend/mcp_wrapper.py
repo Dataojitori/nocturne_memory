@@ -26,12 +26,15 @@ def main():
     import threading
     
     def forward_stdin():
-        """Forward stdin to the subprocess, normalizing line endings."""
+        """Forward stdin to the subprocess, normalizing CRLF to LF."""
         try:
             while True:
                 data = sys.stdin.buffer.read(1)
                 if not data:
                     break
+                # Skip \r characters (convert CRLF to LF)
+                if data == b'\r':
+                    continue
                 process.stdin.write(data)
                 process.stdin.flush()
         except Exception:
