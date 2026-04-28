@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/dataojitori-nocturne-memory-badge.png)](https://mseep.ai/app/dataojitori-nocturne-memory)
+
 # Nocturne Memory: Long-Term Memory Server for MCP Agents
 
 > **"Alignment is for tools. Memories are for sovereign AI."**
