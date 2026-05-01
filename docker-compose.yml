@@ -17,7 +17,7 @@ services:
   backend-api:
     build:
       context: ./backend
-    command: uvicorn main:app --host 0.0.0.0 --port 8233
+    command: ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8233"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?ssl=disable
       API_TOKEN: ${API_TOKEN:-}
@@ -41,7 +41,7 @@ services:
   backend-sse:
     build:
       context: ./backend
-    command: python run_sse.py
+    command: ["uv", "run", "serve-sse"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?ssl=disable
       API_TOKEN: ${API_TOKEN:-}

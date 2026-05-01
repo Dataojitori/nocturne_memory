@@ -22,18 +22,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: |
-            backend/requirements.txt
-            backend/requirements-dev.txt
+
+      - uses: astral-sh/setup-uv@v5
 
       - name: Install backend test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+        run: uv sync --dev --project backend
 
       - name: Run backend test suite (SQLite)
-        run: pytest backend/tests --cov=backend --cov-report=term-missing --cov-report=xml
+        run: uv run --project backend pytest backend/tests --cov=backend --cov-report=term-missing --cov-report=xml
 
   backend-postgres:
     runs-on: ubuntu-latest
@@ -58,17 +54,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            backend/requirements.txt
-            backend/requirements-dev.txt
+
+      - uses: astral-sh/setup-uv@v5
 
       - name: Install backend test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+        run: uv sync --dev --project backend
 
       - name: Run PostgreSQL integration smoke tests
         env:
           TEST_DATABASE_URL: postgresql+asyncpg://nocturne:nocturne@127.0.0.1:5432/nocturne_memory?ssl=disable
-        run: pytest backend/tests/service backend/tests/api -q
+        run: uv run --project backend pytest backend/tests/service backend/tests/api -q
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build ./backend

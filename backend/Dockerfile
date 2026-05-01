@@ -1,29 +1,42 @@
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
-# 安装系统依赖（libpq-dev 供 asyncpg/psycopg2 编译，build-essential 供 C 扩展和标准库头文件，postgresql-client 供 pg_dump 备份）
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
-        curl \
         libc6-dev \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS runtime
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
         libpq-dev \
         postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv
 
-# 优先复制 requirements.txt 以利用 Docker 层缓存
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制剩余源码
 COPY . .
 
-# 创建非 root 用户以提升安全性
+RUN uv sync --frozen --no-dev
+
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
 
-# 预创建运行时目录，避免挂载卷后首次写入遇到权限问题
 RUN mkdir -p /app/snapshots /app/backups \
     && chown appuser:appuser /app/snapshots /app/backups
 

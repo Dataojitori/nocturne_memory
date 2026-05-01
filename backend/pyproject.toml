@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+include = ["*.py", "api/**/*.py", "db/**/*.py", "models/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+
+[project]
+name = "nocturne-memory"
+version = "2.4.0"
+description = "Long-term memory server for MCP agents"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.5.3",
+    "pydantic-settings>=2.1.0",
+    "mcp>=0.1.0",
+    "httpx>=0.26.0",
+    "requests>=2.31.0",
+    "diff-match-patch",
+    "jieba>=0.42.1",
+    "pyahocorasick>=2.0.0",
+    "filelock>=3.10.0",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.19.0",
+    "asyncpg>=0.29.0",
+]
+
+[project.scripts]
+serve-mcp = "mcp_server:mcp.run"
+serve-sse = "run_sse:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+]
