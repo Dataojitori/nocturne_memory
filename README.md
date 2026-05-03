@@ -358,8 +358,8 @@ Nocturne Memory 采用极简但高可用（High-Availability）的 **SQLite/Post
 3. 复制 .env.example 为 .env
 4. 【关键】获取当前目录的绝对路径，修改 .env 中的 DATABASE_URL，确保它指向绝对路径。
 5. 【关键】询问我使用的是哪个客户端（Claude/Cursor/Antigravity etc）。
-   - 如果是 **Antigravity**：args 必须指向 `backend/mcp_wrapper.py`（解决 Windows CRLF 问题）。
-   - 其他客户端：使用 `uv run serve-mcp`。
+   - 如果是 **Antigravity**：args 必须指向 `mcp_wrapper.py`（解决 Windows CRLF 问题）。
+   - 其他客户端：使用 `uv run --project ./backend serve-mcp`。
    - 生成对应的 MCP 的 JSON 配置供我复制。
 ```
 
@@ -370,7 +370,7 @@ Nocturne Memory 采用极简但高可用（High-Availability）的 **SQLite/Post
 ```bash
 git clone https://github.com/Dataojitori/nocturne_memory.git
 cd nocturne_memory
-uv sync
+uv sync --project ./backend
 ```
 
 ### Step 2：配置环境变量
@@ -402,7 +402,7 @@ DATABASE_URL=sqlite+aiosqlite:///C:/your/actual/path/nocturne_memory/demo.db
   "mcpServers": {
     "nocturne_memory": {
       "command": "uv",
-      "args": ["run", "--project", "C:/your/actual/path/nocturne_memory", "serve-mcp"]
+      "args": ["run", "--project", "C:/your/actual/path/nocturne_memory/backend", "serve-mcp"]
     }
   }
 }
@@ -421,7 +421,7 @@ DATABASE_URL=sqlite+aiosqlite:///C:/your/actual/path/nocturne_memory/demo.db
 在终端中执行（替换为你的绝对路径）：
 
 ```powershell
-claude mcp add-json -s user nocturne-memory '{"type":"stdio","command":"uv","args":["run","--project","C:/absolute/path/to/nocturne_memory","serve-mcp"]}'
+claude mcp add-json -s user nocturne-memory '{"type":"stdio","command":"uv","args":["run","--project","C:/absolute/path/to/nocturne_memory/backend","serve-mcp"]}'
 claude mcp list
 ```
 
@@ -429,14 +429,14 @@ claude mcp list
 
 #### Antigravity (Windows)
 
-由于 Antigravity IDE 在 Windows 上存在换行符 bug（CRLF vs LF），**必须**将 `args` 指向 `backend/mcp_wrapper.py`：
+由于 Antigravity IDE 在 Windows 上存在换行符 bug（CRLF vs LF），**必须**将 `args` 指向 `mcp_wrapper.py`：
 
 ```json
 {
   "mcpServers": {
     "nocturne_memory": {
       "command": "uv",
-      "args": ["run", "--project", "C:/absolute/path/to/nocturne_memory", "python", "backend/mcp_wrapper.py"]
+      "args": ["run", "--project", "C:/absolute/path/to/nocturne_memory/backend", "python", "mcp_wrapper.py"]
     }
   }
 }
@@ -517,7 +517,7 @@ AI 通过 MCP 协议获得 **7 个工具**来操作自己的记忆：
 
 如果你的 AI 客户端不支持 stdio 模式（如 Web 端 Agent），可以使用 SSE 传输：
 ```bash
-uv run serve-sse
+uv run --project ./backend serve-sse
 ```
 该命令启动一个统一进程，同时提供 MCP 传输、REST API 和 Dashboard：
 - SSE Endpoint: `http://localhost:8233/sse`
@@ -588,12 +588,12 @@ CORE_MEMORY_URIS=core://agent,core://my_user,core://agent/my_user
   "mcpServers": {
     "nocturne_memory_alice": {
       "command": "uv",
-      "args": ["run", "--project", "C:/path/to/nocturne_memory", "serve-mcp"],
+      "args": ["run", "--project", "C:/path/to/nocturne_memory/backend", "serve-mcp"],
       "env": { "NAMESPACE": "alice" }
     },
     "nocturne_memory_bob": {
       "command": "uv",
-      "args": ["run", "--project", "C:/path/to/nocturne_memory", "serve-mcp"],
+      "args": ["run", "--project", "C:/path/to/nocturne_memory/backend", "serve-mcp"],
       "env": { "NAMESPACE": "bob" }
     }
   }

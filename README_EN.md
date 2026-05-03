@@ -379,8 +379,8 @@ Steps:
 3. Copy .env.example to .env
 4. [CRITICAL] Get the absolute path of the current directory. Modify DATABASE_URL in .env to point to that absolute path.
 5. [CRITICAL] Ask me which client I'm using (Claude/Cursor/Antigravity etc).
-   - If **Antigravity**: args must point to `backend/mcp_wrapper.py` (fixes Windows CRLF issue).
-   - Other clients: use `uv run serve-mcp`.
+   - If **Antigravity**: args must point to `mcp_wrapper.py` (fixes Windows CRLF issue).
+   - Other clients: use `uv run --project ./backend serve-mcp`.
    - Generate the corresponding MCP JSON config for me to copy.
 ```
 
@@ -391,7 +391,7 @@ Steps:
 ```bash
 git clone https://github.com/Dataojitori/nocturne_memory.git
 cd nocturne_memory
-uv sync
+uv sync --project ./backend
 ```
 
 ### Step 2: Configure Environment
@@ -423,7 +423,7 @@ Add the following to your AI client's MCP configuration (Cursor / Claude Desktop
   "mcpServers": {
     "nocturne_memory": {
       "command": "uv",
-      "args": ["run", "--project", "C:/your/actual/path/nocturne_memory", "serve-mcp"]
+      "args": ["run", "--project", "C:/your/actual/path/nocturne_memory/backend", "serve-mcp"]
     }
   }
 }
@@ -442,7 +442,7 @@ Add the following to your AI client's MCP configuration (Cursor / Claude Desktop
 Run in your terminal (replace with your absolute path):
 
 ```powershell
-claude mcp add-json -s user nocturne-memory '{"type":"stdio","command":"uv","args":["run","--project","C:/absolute/path/to/nocturne_memory","serve-mcp"]}'
+claude mcp add-json -s user nocturne-memory '{"type":"stdio","command":"uv","args":["run","--project","C:/absolute/path/to/nocturne_memory/backend","serve-mcp"]}'
 claude mcp list
 ```
 
@@ -450,14 +450,14 @@ claude mcp list
 
 #### Antigravity (Windows)
 
-Due to a stdin/stdout newline handling bug (CRLF vs LF) in Antigravity IDE on Windows, you **must** point `args` to `backend/mcp_wrapper.py`:
+Due to a stdin/stdout newline handling bug (CRLF vs LF) in Antigravity IDE on Windows, you **must** point `args` to `mcp_wrapper.py`:
 
 ```json
 {
   "mcpServers": {
     "nocturne_memory": {
       "command": "uv",
-      "args": ["run", "--project", "C:/absolute/path/to/nocturne_memory", "python", "backend/mcp_wrapper.py"]
+      "args": ["run", "--project", "C:/absolute/path/to/nocturne_memory/backend", "python", "mcp_wrapper.py"]
     }
   }
 }
@@ -537,7 +537,7 @@ The AI operates its own memories through **7 tools** via the MCP protocol:
 ### SSE / Remote Support
 If your AI client doesn't support stdio mode (e.g., web-based Agents), you can use SSE transport:
 ```bash
-uv run serve-sse
+uv run --project ./backend serve-sse
 ```
 SSE Endpoint: `http://localhost:8233/sse`
 
@@ -605,12 +605,12 @@ If you want to run multiple AI personas in the same database (e.g., Alice and Bo
   "mcpServers": {
     "nocturne_memory_alice": {
       "command": "uv",
-      "args": ["run", "--project", "C:/path/to/nocturne_memory", "serve-mcp"],
+      "args": ["run", "--project", "C:/path/to/nocturne_memory/backend", "serve-mcp"],
       "env": { "NAMESPACE": "alice" }
     },
     "nocturne_memory_bob": {
       "command": "uv",
-      "args": ["run", "--project", "C:/path/to/nocturne_memory", "serve-mcp"],
+      "args": ["run", "--project", "C:/path/to/nocturne_memory/backend", "serve-mcp"],
       "env": { "NAMESPACE": "bob" }
     }
   }
