@@ -394,13 +394,17 @@ async def generate_glossary_index_view() -> str:
         return t("system.error_glossary").format(error=str(e))
 
 
-async def generate_diagnostic_view(domain: str, days_stale: int = 30, max_children: int = 10) -> str:
+async def generate_diagnostic_view(domain: str, days_stale: int = 30, max_children: int = 10, bloat_min_bytes: int = 2048) -> str:
     """Generate a diagnostic report of the memory graph (system://diagnostic/<domain>)."""
     graph = get_graph_service()
 
     try:
+        ns = get_namespace()
         diagnostics = await graph.get_diagnostics(
-            namespace=get_namespace(), days_stale=days_stale, max_children=max_children, domain=domain
+            namespace=ns, days_stale=days_stale, max_children=max_children, domain=domain
+        )
+        bloated_nodes = await graph.get_longest_memories(
+            namespace=ns, domain=domain, limit=10, min_bytes=bloat_min_bytes
         )
 
         stale_nodes = diagnostics.get("stale_nodes", [])
@@ -408,7 +412,7 @@ async def generate_diagnostic_view(domain: str, days_stale: int = 30, max_childr
         orphaned_nodes = diagnostics.get("orphaned_nodes", [])
         duplicate_aliases = diagnostics.get("duplicate_aliases", [])
 
-        if not stale_nodes and not crowded_nodes and not orphaned_nodes and not duplicate_aliases:
+        if not stale_nodes and not crowded_nodes and not orphaned_nodes and not duplicate_aliases and not bloated_nodes:
             return "No issues found. Memory system is healthy."
 
         lines = [
@@ -493,6 +497,18 @@ async def generate_diagnostic_view(domain: str, days_stale: int = 30, max_childr
                     for p in paths_list:
                         lines.append(f"     - {p}")
                     lines.append("")
+
+        if bloated_nodes:
+            lines.extend([
+                "## 4. Bloated Memories",
+                f"Top active memories exceeding {bloat_min_bytes / 1024:.1f} KB (ranked by UTF-8 byte size).",
+                ""
+            ])
+            for i, node in enumerate(bloated_nodes, 1):
+                kb_size = node["byte_size"] / 1024
+                lines.append(f"{i}. {node['uri']}")
+                lines.append(f"   Priority: {node['priority']} | {kb_size:.1f} KB | {node['char_count']} chars")
+            lines.append("")
 
         return "\n".join(lines).strip()
 

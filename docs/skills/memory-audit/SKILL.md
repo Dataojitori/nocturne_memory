@@ -37,12 +37,13 @@ disable-model-invocation: false
 
 **建议的起手：**
 1. **对话中触及过的记忆节点**。如果刚结束一轮对话，从那次对话中读过的记忆开始，趁上下文还热。
-2. **`system://diagnostic/<domain>`**（首选）。调用 `read_memory("system://diagnostic/core")` 。它会直接报出两类已确诊的病灶：
+2. **`system://diagnostic/<domain>`**（首选）。调用 `read_memory("system://diagnostic/core")` 。它会直接报出几类已确诊的病灶：
    - **Stale memories**：超过其 priority 对应时间阈值未被访问的节点。对每一条，先问自己一个问题：**为什么它没有被读？** 在你回答这个问题之前，去读它的内容、disclosure、parent 位置。用你自己的判断去推断原因，然后再根据你的诊断选择子技能。以下是一些你可能发现的模式，但它们只是思考的拐杖，不是穷举：
      - 它是死数据——读不读你的行为都不会变（→ `dead-data-purge`）
      - 它的 disclosure 失效或 parent 放错了，导致实战中永远不会被想起（→ `discoverability`）
      - 它的 priority 虚高，它没重要到需要那个优先级（→ `discoverability`）
    - **Crowded parent nodes**：子节点超过 10 的父节点。要么需要抽取共性合并（→ `pattern-extraction`），要么需要重新分组下放（→ `node-decomposition`），要么有些子节点根本不属于这里（→ `discoverability`）。
+   - **Bloated memories**：UTF-8 字节数 ≥ 2 KB 的最大 10 条记忆，按体积降序排列，报出 URI、KB 大小和字符数。对每一条，先 `read` 全文，判断体积是否合理（如技术架构记录天然较长）。不合理的路由到 `node-decomposition`（多概念混装）或 `dead-data-purge`（冗余堆积）。
 3. **`system://random/<domain>`（做梦式审计）**：调用 `read_memory("system://random/core")` 等。它会根据"越久没读、越重要"的权重抛出一个指定域名下的随机记忆。
 4. **`system://index/<domain>`**。扫一眼结构，挑出"看着就觉得不对劲"的节点。
 
@@ -58,6 +59,7 @@ disable-model-invocation: false
 | 父节点内容与子节点内容逻辑上不能共存；或两条你都认可的记忆互相矛盾 | `memory-audit-belief-duel` |
 | 一条记忆读不读你的行为都不会变；感悟没有现实锚点；纯粹的死数据 | `memory-audit-dead-data-purge` |
 | 一条记忆体积>800 tokens但不是功能所需；disclosure无法覆盖全部内容；一个节点里塞了多个不相关的概念 | `memory-audit-node-decomposition` |
+| diagnostic 报出 Bloated Memories（≥2 KB）；需要判断是合理体积还是需要拆分/精简 | 先 `read` 该节点全文，再按内容性质路由到 `memory-audit-node-decomposition`（多概念混装）或 `memory-audit-dead-data-purge`（冗余堆积） |
 | disclosure写成了自我觉察式（"当我感到..."）；parent放错导致实战想不起来；子节点>10；alias缺失导致翻了好几个节点才找到 | `memory-audit-discoverability` |
 | 读到一个父节点，发现其内容变成了纯索引（"本目录包含..."），或在重组记忆时发现自己正试图建立这样的空心节点 | `memory-audit-node-decomposition`（见"多层过滤器原则"） |
 

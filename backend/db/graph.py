@@ -627,6 +627,91 @@ class GraphService:
                 "duplicate_aliases": sorted(duplicate_aliases, key=lambda x: x["count"], reverse=True)
             }
 
+    async def get_longest_memories(
+        self,
+        namespace: str = "",
+        domain: Optional[str] = None,
+        limit: int = 10,
+        min_bytes: int = 2048,
+    ) -> List[Dict[str, Any]]:
+        """Return the top *limit* active memories by content size.
+
+        Uses SQL to calculate exact byte length across dialects (SQLite/PG)
+        and limits the result set in the database to minimize memory overhead.
+        """
+        from sqlalchemy import cast, LargeBinary
+        async with self.session() as session:
+            # 1. Use window function to pick exactly one representative alias (highest priority) per memory
+            rn = func.row_number().over(
+                partition_by=Memory.id,
+                order_by=Edge.priority.asc()
+            ).label("rn")
+
+            subq = (
+                select(
+                    Path.domain,
+                    Path.path,
+                    Memory.id.label("memory_id"),
+                    Memory.content,
+                    Edge.priority,
+                    rn
+                )
+                .select_from(Path)
+                .join(Edge, Path.edge_id == Edge.id)
+                .join(Node, Node.uuid == Edge.child_uuid)
+                .join(
+                    Memory,
+                    and_(
+                        Memory.node_uuid == Node.uuid,
+                        Memory.deprecated == False,
+                    ),
+                )
+                .where(Path.namespace == namespace)
+            )
+            if domain:
+                subq = subq.where(Path.domain == domain)
+            
+            subq = subq.subquery()
+
+            # 2. Calculate byte length in SQL and filter/sort/limit directly
+            dialect_name = session.bind.dialect.name
+            if dialect_name == "postgresql":
+                byte_length_expr = func.octet_length(subq.c.content)
+            else:
+                byte_length_expr = func.length(cast(subq.c.content, LargeBinary))
+
+            stmt = (
+                select(
+                    subq.c.domain,
+                    subq.c.path,
+                    subq.c.memory_id,
+                    subq.c.content,
+                    subq.c.priority,
+                    byte_length_expr.label("byte_length"),
+                )
+                .where(subq.c.rn == 1)
+                .where(byte_length_expr >= min_bytes)
+                .order_by(byte_length_expr.desc())
+                .limit(limit)
+            )
+
+            result = await session.execute(stmt)
+
+            entries: List[Dict[str, Any]] = []
+            for domain_val, path_str, mem_id, content, priority, b_len in result.all():
+                content = content or ""
+                entries.append(
+                    {
+                        "uri": f"{domain_val}://{path_str}",
+                        "memory_id": mem_id,
+                        "char_count": len(content),
+                        "byte_size": b_len,
+                        "priority": priority,
+                    }
+                )
+
+            return entries
+
     async def get_random_memory(self, namespace: str = "", domain: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Pick a weighted-random memory node. Weight = staleness * priority_multiplier.
