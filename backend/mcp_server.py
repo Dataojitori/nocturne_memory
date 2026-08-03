@@ -28,7 +28,13 @@ import config as _cfg
 # Ensure we can import from backend modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+    IS_MCP_V2 = False
+except ImportError:
+    from mcp.server.mcpserver import MCPServer as FastMCP
+    IS_MCP_V2 = True
+
 from mcp.server.transport_security import TransportSecuritySettings
 from db import (
     get_db_manager, get_graph_service, get_glossary_service,
@@ -209,14 +215,22 @@ async def lifespan(server: FastMCP):
         await close_db()
 
 
-# Initialize FastMCP server with the lifespan hook
-mcp = FastMCP(
-    "Nocturne Memory Interface",
-    lifespan=lifespan,
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=False  # safe when behind a trusted reverse proxy
-    ),
+sec_settings = TransportSecuritySettings(
+    enable_dns_rebinding_protection=False  # safe when behind a trusted reverse proxy
 )
+
+# Initialize FastMCP server with the lifespan hook
+if IS_MCP_V2:
+    mcp = FastMCP(
+        "Nocturne Memory Interface",
+        lifespan=lifespan,
+    )
+else:
+    mcp = FastMCP(
+        "Nocturne Memory Interface",
+        lifespan=lifespan,
+        transport_security=sec_settings,
+    )
 
 # =============================================================================
 # Domain Configuration

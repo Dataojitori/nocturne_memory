@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import config as _cfg
 from auth import enforce_network_auth
-from mcp_server import mcp
+from mcp_server import mcp, IS_MCP_V2, sec_settings
 from web_app import build_web_app, default_lifespan
 
 
@@ -35,8 +35,12 @@ def main():
     print("Initializing Nocturne Memory Server...")
 
     # --- MCP transports ---
-    sse_asgi_app = mcp.sse_app("/")
-    streamable_asgi_app = mcp.streamable_http_app()
+    if IS_MCP_V2:
+        sse_asgi_app = mcp.sse_app(transport_security=sec_settings)
+        streamable_asgi_app = mcp.streamable_http_app(transport_security=sec_settings)
+    else:
+        sse_asgi_app = mcp.sse_app("/")
+        streamable_asgi_app = mcp.streamable_http_app()
 
     @contextlib.asynccontextmanager
     async def combined_lifespan(app):
