@@ -401,7 +401,7 @@ async def generate_diagnostic_view(
     import config
 
     if bloat_min_bytes is None:
-        bloat_min_bytes = config.get("bloat_min_bytes") or 2048
+        bloat_min_bytes = config.get("bloat_min_bytes") or 2400
 
     graph = get_graph_service()
 

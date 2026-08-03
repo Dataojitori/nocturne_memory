@@ -56,7 +56,7 @@ DEFAULTS: dict[str, Any] = {
     "cors_origins": None,
     "public_readonly_mcp": False,
     "locale": None,
-    "bloat_min_bytes": 2048,
+    "bloat_min_bytes": 2400,
 }
 
 _ENV_MAP: dict[str, str] = {

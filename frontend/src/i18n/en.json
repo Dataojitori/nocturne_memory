@@ -22,7 +22,7 @@
       "section_database": "Database Connection",
       "section_boot_uris": "Boot URIs",
       "section_presets": "Boot Presets",
-      "section_maintenance": "Memory Maintenance Thresholds",
+      "section_maintenance": "Memory Audit Bloat Threshold",
       "section_domains": "Memory Domains"
     },
     "error": {
@@ -185,15 +185,26 @@
       "save_failed": "Save failed"
     },
     "maintenance": {
-      "bloat_min_bytes_label": "Node Bloat Threshold (bloat_min_bytes)",
-      "bloat_min_bytes_desc": "When a single memory's UTF-8 content size exceeds this threshold, memory diagnostic and cleanup views flag it as bloated for summarization or splitting.",
+      "bloat_min_bytes_label": "Memory Audit Bloat Threshold (bloat_min_bytes)",
+      "bloat_min_bytes_desc": "When a single memory's UTF-8 content size exceeds this threshold, the AI memory-audit workflow flags it as a Bloated Memory via system://diagnostic, prompting the AI to split or summarize it.",
       "bytes_unit": "Bytes",
       "equiv_kb": "≈ {{kb}} KB",
       "equiv_mb": "≈ {{mb}} MB",
+      "char_estimate": "(≈ {{zhCount}} Chinese chars / {{enCount}} English chars)",
       "invalid_bloat_min_bytes": "Threshold must be a positive integer of at least 1",
       "save_failed": "Failed to save maintenance threshold",
       "saving": "Saving...",
-      "save": "Save"
+      "save": "Save",
+      "explanation_title": "What is Memory Audit & Bloat Threshold?",
+      "explanation_text": "When the AI performs self-reflection and memory quality auditing (memory-audit skill), it queries system://diagnostic to identify memory graph issues. Oversized memories consume excessive context bandwidth and dilute key takeaways. This threshold defines when a memory node is diagnosed as 'bloated'.",
+      "presets_label": "Recommended Presets",
+      "preset_strict": "Compact (1200 B)",
+      "preset_strict_desc": "≈ 400 chars · Aggressive split",
+      "preset_standard": "Standard (2400 B · Default)",
+      "preset_standard_desc": "≈ 800 chars · Recommended default",
+      "preset_relaxed": "Relaxed (4800 B)",
+      "preset_relaxed_desc": "≈ 1600 chars · Allows long nodes",
+      "impact_hint": "💡 Tip: Lowering the threshold prompts the AI to aggressively decompose bloated memories during audits; raising it allows longer single nodes."
     }
   },
 

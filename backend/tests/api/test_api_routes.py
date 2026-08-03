@@ -326,10 +326,10 @@ def test_config_backfills_bloat_min_bytes(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CONFIG_PATH", test_config_path)
     config._invalidate()
 
-    # 内存补齐生效：config.get() 和 config.get_all() 均可获取默认值 2048
+    # 内存补齐生效：config.get() 和 config.get_all() 均可获取默认值 2400
     val = config.get("bloat_min_bytes")
-    assert val == 2048
-    assert config.get_all().get("bloat_min_bytes") == 2048
+    assert val == 2400
+    assert config.get_all().get("bloat_min_bytes") == 2400
 
     # 旧的配置文件在磁盘上保持原样，未进行物理写入，避免只读文件系统等问题
     saved_data = json.loads(test_config_path.read_text())
@@ -346,7 +346,7 @@ async def test_settings_api_bloat_min_bytes(api_client, monkeypatch, tmp_path):
 
     get_res = await api_client.get("/settings")
     assert get_res.status_code == 200
-    assert get_res.json()["settings"]["bloat_min_bytes"] == 2048
+    assert get_res.json()["settings"]["bloat_min_bytes"] == 2400
 
     invalid_res = await api_client.put("/settings", json={"bloat_min_bytes": 0})
     assert invalid_res.status_code == 422

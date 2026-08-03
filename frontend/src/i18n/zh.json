@@ -20,7 +20,7 @@
       "section_database": "数据库连接",
       "section_boot_uris": "启动 URI",
       "section_presets": "启动预设",
-      "section_maintenance": "记忆维护与健康阈值",
+      "section_maintenance": "记忆审计与臃肿阈值",
       "section_domains": "记忆域名"
     },
     "error": {
@@ -181,15 +181,26 @@
       "save_failed": "保存失败"
     },
     "maintenance": {
-      "bloat_min_bytes_label": "节点判定过长阈值 (bloat_min_bytes)",
-      "bloat_min_bytes_desc": "当单条记忆内容的 UTF-8 字节大小超过此阈值时，记忆诊断与清理系统会将其标记为过长节点，便于提炼或拆分。",
+      "bloat_min_bytes_label": "记忆审计臃肿警戒线 (bloat_min_bytes)",
+      "bloat_min_bytes_desc": "当单条记忆内容的 UTF-8 体积超过此阈值时，AI 在执行【记忆审计 (memory-audit)】时，通过诊断视图 (system://diagnostic) 会将其标记为臃肿节点 (Bloated Memory)，提示 AI 进一步拆分或提炼。",
       "bytes_unit": "字节 (Bytes)",
       "equiv_kb": "约 {{kb}} KB",
       "equiv_mb": "约 {{mb}} MB",
+      "char_estimate": "（约 {{zhCount}} 个汉字 / {{enCount}} 个英文字符）",
       "invalid_bloat_min_bytes": "阈值必须是至少为 1 的正整数",
       "save_failed": "保存维护阈值失败",
       "saving": "保存中...",
-      "save": "保存"
+      "save": "保存",
+      "explanation_title": "什么是记忆审计与臃肿阈值？",
+      "explanation_text": "AI 在对自己的大脑记忆库进行自我审视和质量重构（记忆审计技能: memory-audit）时，会调用 system://diagnostic 工具扫描病灶。当单条记忆节点文字过长时，AI 每次调阅会消耗过高的上下文带宽并稀释重点。此阈值决定了单条记忆被 AI 诊断为‘过长/臃肿’的判断标准。",
+      "presets_label": "推荐预设方案",
+      "preset_strict": "紧凑 (1200 B)",
+      "preset_strict_desc": "约 400 字 · 严格拆分",
+      "preset_standard": "标准 (2400 B · 默认)",
+      "preset_standard_desc": "约 800 字 · 推荐默认",
+      "preset_relaxed": "宽松 (4800 B)",
+      "preset_relaxed_desc": "约 1600 字 · 允许长节点",
+      "impact_hint": "💡 调低阈值会促使 AI 在审计时更积极地拆分/解构臃肿记忆；调高阈值则允许 AI 保持单条较长的内容。"
     }
   },
   "memory": {
