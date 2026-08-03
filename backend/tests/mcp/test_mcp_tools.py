@@ -415,3 +415,21 @@ async def test_update_memory_append_preserves_content_verbatim(
     assert "SYSTEM NOTICE" not in result
     memory = await graph_service.get_memory_by_path("append_verbatim", "core")
     assert memory["content"] == "Base content\\n\\nCode: foo\\n\\nbar"
+
+
+async def test_diagnostic_view_respects_config_bloat_min_bytes(mcp_module, monkeypatch):
+    import config
+    monkeypatch.setattr(config, "get", lambda key: 50 if key == "bloat_min_bytes" else config.DEFAULTS.get(key))
+
+    await mcp_module.create_memory(
+        "core://",
+        "A" * 60,
+        priority=1,
+        title="bloated_node_test",
+        disclosure="Testing bloat diagnostic config",
+    )
+
+    diagnostic = await mcp_module.read_memory("system://diagnostic/core")
+    assert "## 4. Bloated Memories" in diagnostic
+    assert "core://bloated_node_test" in diagnostic
+

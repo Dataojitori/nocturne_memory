@@ -22,6 +22,7 @@
       "section_database": "Database Connection",
       "section_boot_uris": "Boot URIs",
       "section_presets": "Boot Presets",
+      "section_maintenance": "Memory Maintenance Thresholds",
       "section_domains": "Memory Domains"
     },
     "error": {
@@ -182,6 +183,17 @@
       "saving": "Saving...",
       "save": "Save",
       "save_failed": "Save failed"
+    },
+    "maintenance": {
+      "bloat_min_bytes_label": "Node Bloat Threshold (bloat_min_bytes)",
+      "bloat_min_bytes_desc": "When a single memory's UTF-8 content size exceeds this threshold, memory diagnostic and cleanup views flag it as bloated for summarization or splitting.",
+      "bytes_unit": "Bytes",
+      "equiv_kb": "≈ {{kb}} KB",
+      "equiv_mb": "≈ {{mb}} MB",
+      "invalid_bloat_min_bytes": "Threshold must be a positive integer of at least 1",
+      "save_failed": "Failed to save maintenance threshold",
+      "saving": "Saving...",
+      "save": "Save"
     }
   },
 

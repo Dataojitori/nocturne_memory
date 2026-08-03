@@ -20,6 +20,7 @@
       "section_database": "数据库连接",
       "section_boot_uris": "启动 URI",
       "section_presets": "启动预设",
+      "section_maintenance": "记忆维护与健康阈值",
       "section_domains": "记忆域名"
     },
     "error": {
@@ -178,6 +179,17 @@
       "saving": "保存中...",
       "save": "保存",
       "save_failed": "保存失败"
+    },
+    "maintenance": {
+      "bloat_min_bytes_label": "节点判定过长阈值 (bloat_min_bytes)",
+      "bloat_min_bytes_desc": "当单条记忆内容的 UTF-8 字节大小超过此阈值时，记忆诊断与清理系统会将其标记为过长节点，便于提炼或拆分。",
+      "bytes_unit": "字节 (Bytes)",
+      "equiv_kb": "约 {{kb}} KB",
+      "equiv_mb": "约 {{mb}} MB",
+      "invalid_bloat_min_bytes": "阈值必须是至少为 1 的正整数",
+      "save_failed": "保存维护阈值失败",
+      "saving": "保存中...",
+      "save": "保存"
     }
   },
   "memory": {

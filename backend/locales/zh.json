@@ -44,7 +44,8 @@
       "core_remove_error": "\"core\" 域名不可移除。",
       "system_reserved_error": "\"system\" 是保留域名，不可添加。",
       "domain_in_use_error": "域名非空。任意命名空间中只要还存在该域名的记忆，就无法全局删除。请先处理这些记忆。",
-      "domain_boot_uri_conflict": "无法删除域名 \"{domain}\"：命名空间 {namespaces} 的启动记忆中仍在引用该域名。请先移除相关的启动记忆。"
+      "domain_boot_uri_conflict": "无法删除域名 \"{domain}\"：命名空间 {namespaces} 的启动记忆中仍在引用该域名。请先移除相关的启动记忆。",
+      "invalid_bloat_min_bytes": "bloat_min_bytes 必须是至少为 1 的整数"
     },
     "maintenance": {
       "memory_not_found": "记忆 {memory_id} 未找到",

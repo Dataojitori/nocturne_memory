@@ -31,6 +31,7 @@ class SettingsUpdate(BaseModel):
     cors_origins: str | None = None
     public_readonly_mcp: bool | None = None
     locale: str | None = None
+    bloat_min_bytes: int | None = None
 
 
 class BootUriUpdate(BaseModel):
@@ -90,6 +91,11 @@ async def update_settings(body: SettingsUpdate):
         port = fields["web_port"]
         if not (1 <= port <= 65535):
             raise HTTPException(status_code=422, detail=t("api.settings.invalid_port").format(port=port))
+
+    if "bloat_min_bytes" in fields:
+        bloat_bytes = fields["bloat_min_bytes"]
+        if bloat_bytes is not None and bloat_bytes < 1:
+            raise HTTPException(status_code=422, detail=t("api.settings.invalid_bloat_min_bytes"))
 
     if "api_token" in fields:
         token = fields["api_token"]

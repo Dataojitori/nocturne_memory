@@ -394,8 +394,15 @@ async def generate_glossary_index_view() -> str:
         return t("system.error_glossary").format(error=str(e))
 
 
-async def generate_diagnostic_view(domain: str, days_stale: int = 30, max_children: int = 10, bloat_min_bytes: int = 2048) -> str:
+async def generate_diagnostic_view(
+    domain: str, days_stale: int = 30, max_children: int = 10, bloat_min_bytes: int | None = None
+) -> str:
     """Generate a diagnostic report of the memory graph (system://diagnostic/<domain>)."""
+    import config
+
+    if bloat_min_bytes is None:
+        bloat_min_bytes = config.get("bloat_min_bytes") or 2048
+
     graph = get_graph_service()
 
     try:

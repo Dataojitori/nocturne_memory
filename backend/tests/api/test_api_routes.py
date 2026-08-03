@@ -314,3 +314,47 @@ async def test_api_requires_bearer_token_when_configured(reload_module, monkeypa
 
     assert unauthorized.status_code == 401
     assert authorized.status_code == 200
+
+
+def test_config_backfills_bloat_min_bytes(tmp_path, monkeypatch):
+    import json
+    import config
+
+    test_config_path = tmp_path / "config.json"
+    test_config_path.write_text(json.dumps({"host": "127.0.0.1", "web_port": 8233}))
+
+    monkeypatch.setattr(config, "CONFIG_PATH", test_config_path)
+    config._invalidate()
+
+    # 内存补齐生效：config.get() 和 config.get_all() 均可获取默认值 2048
+    val = config.get("bloat_min_bytes")
+    assert val == 2048
+    assert config.get_all().get("bloat_min_bytes") == 2048
+
+    # 旧的配置文件在磁盘上保持原样，未进行物理写入，避免只读文件系统等问题
+    saved_data = json.loads(test_config_path.read_text())
+    assert "bloat_min_bytes" not in saved_data
+
+
+async def test_settings_api_bloat_min_bytes(api_client, monkeypatch, tmp_path):
+    import config
+
+    test_config_path = tmp_path / "config.json"
+    test_config_path.write_text('{"host": "127.0.0.1", "web_port": 8233}')
+    monkeypatch.setattr(config, "CONFIG_PATH", test_config_path)
+    config._invalidate()
+
+    get_res = await api_client.get("/settings")
+    assert get_res.status_code == 200
+    assert get_res.json()["settings"]["bloat_min_bytes"] == 2048
+
+    invalid_res = await api_client.put("/settings", json={"bloat_min_bytes": 0})
+    assert invalid_res.status_code == 422
+
+    update_res = await api_client.put("/settings", json={"bloat_min_bytes": 4096})
+    assert update_res.status_code == 200
+    assert "bloat_min_bytes" in update_res.json()["updated"]
+    assert config.get("bloat_min_bytes") == 4096
+
+
+

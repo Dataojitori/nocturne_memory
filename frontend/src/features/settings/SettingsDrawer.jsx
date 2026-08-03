@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Database, Server, Layers, Settings, X, RefreshCw, Globe
+  Database, Server, Layers, Settings, X, RefreshCw, Globe, Wrench
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import i18n, { detectLocale } from '../../i18n';
@@ -13,6 +13,7 @@ import BootUrisSection from './BootUrisSection';
 import ServerSection from './ServerSection';
 import AdvancedSection from './AdvancedSection';
 import LocaleSection from './LocaleSection';
+import MaintenanceSection from './MaintenanceSection';
 
 export default function SettingsDrawer() {
   const { t } = useTranslation();
@@ -178,6 +179,10 @@ export default function SettingsDrawer() {
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
                   <Section icon={Layers} title={t('app.settings.section_presets')}>
                     <PresetsSection />
+                  </Section>
+
+                  <Section icon={Wrench} title={t('app.settings.section_maintenance')} defaultOpen={true}>
+                    <MaintenanceSection settings={settings} onSave={handleSave} />
                   </Section>
                 </div>
               )}

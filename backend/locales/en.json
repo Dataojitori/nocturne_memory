@@ -43,7 +43,8 @@
       "core_remove_error": "The \"core\" domain cannot be removed.",
       "system_reserved_error": "The \"system\" domain is reserved and cannot be added.",
       "domain_in_use_error": "Domain is not empty. It contains memories in some namespace. Please process them first before deleting the domain globally.",
-      "domain_boot_uri_conflict": "Cannot delete domain \"{domain}\": it is referenced by boot URIs in namespace(s): {namespaces}. Remove those boot URIs first."
+      "domain_boot_uri_conflict": "Cannot delete domain \"{domain}\": it is referenced by boot URIs in namespace(s): {namespaces}. Remove those boot URIs first.",
+      "invalid_bloat_min_bytes": "bloat_min_bytes must be an integer of at least 1"
     },
     "maintenance": {
       "memory_not_found": "Memory {memory_id} not found",
