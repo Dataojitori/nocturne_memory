@@ -23,6 +23,7 @@ async def fetch_and_format_memory(uri: str, track_access: bool = False) -> str:
     Fetch memory data and return a formatted string.
     Used by read_memory tool and boot view.
     """
+    import config as _cfg
     from mcp_server import parse_uri, make_uri, DEFAULT_DOMAIN
 
     graph = get_graph_service()
@@ -86,11 +87,16 @@ async def fetch_and_format_memory(uri: str, track_access: bool = False) -> str:
     else:
         lines.append("Keywords: (none)")
 
+    content = memory.get("content", "(empty)")
+    bloat_min = _cfg.get("bloat_min_bytes")
+    if bloat_min is not None and bloat_min > 0:
+        content_bytes = len(content.encode("utf-8"))
+        if content_bytes >= bloat_min:
+            lines.append(f"Content Size: {content_bytes / 1024:.1f} KB")
+
     lines.append("")
     lines.append("=" * 60)
     lines.append("")
-
-    content = memory.get("content", "(empty)")
     lines.append(content)
     lines.append("")
 
