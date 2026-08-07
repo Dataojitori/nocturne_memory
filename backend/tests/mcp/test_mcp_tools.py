@@ -253,11 +253,7 @@ async def test_update_memory_falls_back_to_normalized_patch(
         old_string='Nocturne said "I will not kneel."',
         new_string='Nocturne said "I refuse to kneel."',
     )
-    assert result == "Success: Memory at 'core://norm_test' updated"
-
-    memory = await graph_service.get_memory_by_path("norm_test", "core")
-    assert '"I refuse to kneel."' in memory["content"]
-    assert "That is final." in memory["content"]
+    assert "Error" in result
 
 
 async def test_update_memory_exact_match_takes_priority(
@@ -275,7 +271,7 @@ async def test_update_memory_exact_match_takes_priority(
         old_string="Hello",
         new_string="Goodbye",
     )
-    assert result == "Success: Memory at 'core://exact_test' updated"
+    assert "Success: Memory at 'core://exact_test' updated" in result
     memory = await graph_service.get_memory_by_path("exact_test", "core")
     assert memory["content"] == "Goodbye World"
 
@@ -292,11 +288,11 @@ async def test_update_memory_normalized_ambiguous_returns_error(
     )
     result = await mcp_module.update_memory(
         "core://ambig_test",
-        old_string='"yes"',
+        old_string='\u201cyes\u201d',
         new_string='"no"',
     )
     assert "Error" in result
-    assert "normalization" in result.lower()
+    assert "ambiguous" in result.lower()
 
 
 async def test_create_memory_preserves_all_content_verbatim(
@@ -341,7 +337,7 @@ async def test_update_memory_preserves_literal_backslash_sequences(
         new_string=r"D:\logs\test",
     )
 
-    assert result == "Success: Memory at 'core://literal_backslash_update' updated"
+    assert "Success: Memory at 'core://literal_backslash_update' updated" in result
     memory = await graph_service.get_memory_by_path("literal_backslash_update", "core")
     assert memory["content"] == r"Store D:\logs\test and regex foo\\nbar literally."
 
@@ -361,11 +357,10 @@ async def test_update_memory_normalizes_escaped_newlines_on_patch_fallback(
     result = await mcp_module.update_memory(
         "core://escaped_multiline_update",
         old_string="# Title\\n\\n- alpha\\n- beta",
-        new_string="# Title\\n\\n- gamma\\n- delta",
+        new_string="# Title\n\n- gamma\n- delta",
     )
 
     assert "Success: Memory at 'core://escaped_multiline_update' updated" in result
-    assert "\n\n[SYSTEM NOTICE]" in result
     memory = await graph_service.get_memory_by_path("escaped_multiline_update", "core")
     assert memory["content"] == "# Title\n\n- gamma\n- delta"
 
@@ -415,6 +410,144 @@ async def test_update_memory_append_preserves_content_verbatim(
     assert "SYSTEM NOTICE" not in result
     memory = await graph_service.get_memory_by_path("append_verbatim", "core")
     assert memory["content"] == "Base content\\n\\nCode: foo\\n\\nbar"
+
+
+# =============================================================================
+# Block patch mode (old_start + old_end + new_string)
+# =============================================================================
+
+
+async def test_update_memory_block_replaces_section(mcp_module, graph_service):
+    """Block mode replaces the uniquely matched block."""
+    await graph_service.create_memory(
+        parent_path="",
+        content="## History\nOld stuff\nMore old stuff\n\n## Future\nPlans here",
+        priority=1,
+        title="block_basic",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_basic",
+        old_string="## History\n...\n\n## Future",
+        new_string="## History\nRewritten content\n\n## Future",
+    )
+
+    assert "Success" in result
+    memory = await graph_service.get_memory_by_path("block_basic", "core")
+    assert memory["content"] == "## History\nRewritten content\n\n## Future\nPlans here"
+
+
+async def test_update_memory_block_delete_section(mcp_module, graph_service):
+    """Block mode with empty new_string deletes the matched block."""
+    await graph_service.create_memory(
+        parent_path="",
+        content="Keep this\n## Remove\nGarbage\n## End",
+        priority=1,
+        title="block_delete",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_delete",
+        old_string="\n## Remove\n...\n## End",
+        new_string="",
+    )
+
+    assert "Success" in result
+    memory = await graph_service.get_memory_by_path("block_delete", "core")
+    assert memory["content"] == "Keep this"
+
+
+async def test_update_memory_block_no_match_returns_error(mcp_module, graph_service):
+    await graph_service.create_memory(
+        parent_path="",
+        content="Nothing matches here",
+        priority=1,
+        title="block_nomatch",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_nomatch",
+        old_string="## NONEXISTENT...## END",
+        new_string="replacement",
+    )
+
+    assert "Error" in result
+    assert "Could not find any match" in result
+
+
+async def test_update_memory_block_multiple_matches_returns_error(mcp_module, graph_service):
+    await graph_service.create_memory(
+        parent_path="",
+        content="## Section\nContent A\n## End\n\n## Section\nContent B\n## End",
+        priority=1,
+        title="block_multi",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_multi",
+        old_string="## Section\n...\n## End",
+        new_string="replacement",
+    )
+
+    assert "Error" in result
+    assert "Ambiguous update" in result
+    assert "Match 1" in result
+    assert "Match 2" in result
+
+
+async def test_update_memory_block_missing_end_returns_error(mcp_module, graph_service):
+    await graph_service.create_memory(
+        parent_path="",
+        content="Some content",
+        priority=1,
+        title="block_missing_end",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_missing_end",
+        old_string="Some...missing",
+        new_string="replacement",
+    )
+
+    assert "Error" in result
+
+
+async def test_update_memory_block_without_new_string_returns_error(mcp_module, graph_service):
+    await graph_service.create_memory(
+        parent_path="",
+        content="Some content",
+        priority=1,
+        title="block_no_new",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_no_new",
+        old_string="Some...content",
+    )
+
+    assert "Error" in result
+    assert "new_string" in result
+
+
+
+
+async def test_update_memory_block_identical_result_returns_error(mcp_module, graph_service):
+    """Block that matches text identical to new_string should fail."""
+    await graph_service.create_memory(
+        parent_path="",
+        content="Hello world",
+        priority=1,
+        title="block_noop",
+    )
+
+    result = await mcp_module.update_memory(
+        "core://block_noop",
+        old_string="Hello...world",
+        new_string="Hello world",
+    )
+
+    assert "Error" in result
+    assert "identical" in result
 
 
 async def test_diagnostic_view_respects_config_bloat_min_bytes(mcp_module, monkeypatch):

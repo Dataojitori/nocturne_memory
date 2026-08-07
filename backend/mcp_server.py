@@ -596,9 +596,14 @@ async def update_memory(
 
     Two content-editing modes (mutually exclusive):
 
-    1. Patch mode (primary): Provide old_string + new_string.
-       old_string must match exactly ONE location in the existing content.
-       To delete a section, set new_string to "".
+    1. Replace mode (primary): Provide old_string + new_string.
+       - Exact Match: If `old_string` matches a string in the text exactly, it replaces it.
+       - Block Match: You can use `...` (three dots) to represent a long middle section. 
+         For example, old_string="Start of paragraph...end of paragraph."
+       The system will search using BOTH exact match and block match simultaneously.
+       If it finds MORE THAN ONE unique matching block in the text, it will reject the update
+       to prevent accidental replacements. You must provide a unique `old_string` string.
+       To delete a section, set new_string="".
 
     2. Append mode: Provide append.
        Adds text to the end of existing content.
@@ -607,8 +612,8 @@ async def update_memory(
 
     Args:
         uri: URI to update (e.g., "core://agent/my_user")
-        old_string: [Patch] Text to find in existing content (must be unique match)
-        new_string: [Patch] Replacement text. Use "" to delete a section.
+        old_string: [Replace] Text to find in existing content (supports '...' for block matching)
+        new_string: [Replace] Replacement text. Use "" to delete a section.
         append: [Append] Text to append to end of existing content
         priority: New relative priority for THIS URI/edge only (None = keep existing).
                   Bound to the path, not the content. Alias A and B have independent priorities.
@@ -637,120 +642,127 @@ async def update_memory(
         full_uri = make_uri(domain, path)
 
         # --- Validate mutually exclusive content-editing modes ---
-        if old_string is not None and append is not None:
-            return "Error: Cannot use both old_string/new_string (patch) and append at the same time. Pick one."
+        content_mode_count = sum([
+            old_string is not None,
+            append is not None,
+        ])
+        if content_mode_count > 1:
+            return (
+                "Error: Cannot use multiple content-editing modes at once. "
+                "Pick one: old_string+new_string, or append."
+            )
 
         if old_string is not None and new_string is None:
             return 'Error: old_string provided without new_string. To delete a section, use new_string="".'
 
         if new_string is not None and old_string is None:
-            return "Error: new_string provided without old_string. Both are required for patch mode."
+            return "Error: new_string provided without old_string."
 
-        # --- Resolve content for patch/append modes ---
         content = None
 
         if old_string is not None:
-            # Patch mode: find and replace within existing content
-            if old_string == new_string:
-                return (
-                    "Error: old_string and new_string are identical. "
-                    "No change would be made."
-                )
-
             memory = await graph.get_memory_by_path(path, domain, namespace=get_namespace())
             if not memory:
                 return f"Error: Memory at '{full_uri}' not found."
 
             current_content = memory.get("content", "")
-            count = current_content.count(old_string)
+            matches = set()
 
-            if count > 1:
+            def find_exact(search_str):
+                s_idx = 0
+                while True:
+                    idx = current_content.find(search_str, s_idx)
+                    if idx == -1: break
+                    matches.add((idx, idx + len(search_str)))
+                    s_idx = idx + 1
+
+            # 1. Exact Match
+            find_exact(old_string)
+
+            # Normalize literal \n if present (LLM serialization artifact)
+            if "\\n" in old_string:
+                from text_patch import normalize_literal_newlines
+                norm_old = normalize_literal_newlines(old_string)
+                if norm_old != old_string:
+                    find_exact(norm_old)
+
+            # 2. Block Match
+            SEPARATOR = "..."
+            if SEPARATOR in old_string:
+                start_marker = old_string[:old_string.find(SEPARATOR)]
+                end_marker = old_string[old_string.rfind(SEPARATOR) + len(SEPARATOR):]
+                
+                if start_marker and end_marker:
+                    s_idx = 0
+                    while True:
+                        s_pos = current_content.find(start_marker, s_idx)
+                        if s_pos == -1: break
+                        
+                        e_idx = s_pos + len(start_marker)
+                        while True:
+                            e_pos = current_content.find(end_marker, e_idx)
+                            if e_pos == -1: break
+                            matches.add((s_pos, e_pos + len(end_marker)))
+                            if len(matches) > 5:
+                                break
+                            e_idx = e_pos + 1
+                            
+                        if len(matches) > 5:
+                            break
+                        s_idx = s_pos + 1
+
+            if len(matches) == 0:
                 return (
-                    f"Error: old_string found {count} times in memory content at '{full_uri}'. "
-                    f"Provide more surrounding context to make it unique."
+                    f"Error: Could not find any match for `old_string` in '{full_uri}'. "
+                    f"Please check the text and try again."
                 )
 
-            if count == 1:
-                content = current_content.replace(old_string, new_string, 1)
-            else:
-                # Exact match failed — try literal-newline normalization fallback.
-                # LLMs sometimes serialize multiline content with literal \n tokens
-                # instead of real newlines.  We normalize old_string and check whether
-                # the result uniquely matches the stored content.  This is validated
-                # against ground truth (the actual stored text), not a heuristic.
-                norm_old = normalize_literal_newlines(old_string) if "\\n" in old_string else None
-                if norm_old is not None and norm_old != old_string:
-                    norm_count = current_content.count(norm_old)
-                    if norm_count == 1:
-                        norm_new = normalize_literal_newlines(new_string) if new_string and "\\n" in new_string else new_string
-                        content = current_content.replace(norm_old, norm_new, 1)
-                        for field_name, original, normalized in [
-                            ("old_string", old_string, norm_old),
-                            ("new_string", new_string, norm_new),
-                        ]:
-                            if original != normalized:
-                                orig_preview = format_normalization_preview(original)
-                                norm_preview = format_normalization_preview(normalized)
-                                notices.append(
-                                    f"[SYSTEM NOTICE]: Auto-normalized `{field_name}` — "
-                                    f"converted literal '\\n' sequences to real newlines "
-                                    f"because they matched the stored content.\n"
-                                    f"- Original: `{orig_preview}`\n"
-                                    f"- Normalized: `{norm_preview}`"
-                                )
+            if len(matches) > 1:
+                previews = []
+                for i, (s, e) in enumerate(sorted(list(matches))[:5]):
+                    snippet = current_content[s:e]
+                    if len(snippet) > 80:
+                        snippet = snippet[:40] + "..." + snippet[-37:]
+                    previews.append(f"  Match {i+1} (pos {s}-{e}): {repr(snippet)}")
+                
+                msg = (
+                    f"Error: Ambiguous update. Found multiple (at least {len(matches)}) different matching blocks for `old_string` in '{full_uri}'. "
+                    f"Please provide a longer `old_string` string to ensure a unique match.\n"
+                    + "\n".join(previews)
+                )
+                if len(matches) > 5:
+                    msg += f"\n  ... and possibly more."
+                return msg
 
-                if content is None:
-                    # Still no match — fall back to Unicode normalized comparison
-                    # (handles curly/straight quotes, dash variants, trailing
-                    # whitespace, and consecutive-space collapse).
-                    patched = try_normalized_patch(
-                        current_content, old_string, new_string
-                    )
-                    if patched is not None:
-                        content = patched
-                    else:
-                        norm_content = normalize_with_positions(current_content)[0]
-                        total_valid = 0
-                        for _preserve in (True, False):
-                            _norm_old = normalize_with_positions(
-                                old_string, preserve_first_line_indent=_preserve
-                            )[0]
-                            if _norm_old:
-                                total_valid += len(find_valid_matches(
-                                    norm_content, _norm_old,
-                                    indent_collapsed=(not _preserve),
-                                ))
-
-                        if total_valid == 0:
-                            return (
-                                f"Error: old_string not found in memory content at "
-                                f"'{full_uri}', even after Unicode normalization "
-                                f"(quotes, dashes, whitespace). "
-                                f"Re-read the memory and copy the exact text."
-                            )
-                        
-                        return (
-                            f"Error: old_string found multiple times in "
-                            f"memory content at '{full_uri}' (after Unicode "
-                            f"normalization). Provide more surrounding context "
-                            f"to make it unique."
-                        )
+            span_start, span_end = list(matches)[0]
+            matched_text = current_content[span_start:span_end]
+            
+            # If the match was found using the normalized old_string (because LLM passed literal \n),
+            # we must also normalize new_string so we don't inject literal \n into the text.
+            if "\\n" in old_string and matched_text != old_string:
+                from text_patch import normalize_literal_newlines
+                norm_old = normalize_literal_newlines(old_string)
+                if matched_text == norm_old and "\\n" in new_string:
+                    new_string = normalize_literal_newlines(new_string)
+                    notices.append("[SYSTEM NOTICE]: Auto-normalized literal '\\n' in new_string to real newlines.")
+                
+            content = current_content[:span_start] + new_string + current_content[span_end:]
 
             if content == current_content:
                 return (
                     f"Error: Replacement produced identical content at '{full_uri}'. "
-                    f"The old_string was found but replacing it with new_string "
-                    f"resulted in no change. Check for subtle whitespace differences."
+                    f"No change was made."
                 )
 
+            if len(matched_text) > 100:
+                preview = matched_text[:50] + " ... " + matched_text[-47:]
+            else:
+                preview = matched_text
+            notices.append(f"[Matched {len(matched_text)} chars]: {repr(preview)}")
+
         elif append is not None:
-            # Reject empty append to avoid creating a no-op version
             if not append:
-                return (
-                    f"Error: Empty append for '{full_uri}'. "
-                    f"Provide non-empty text to append."
-                )
-            # Append mode: add to end of existing content
+                return f"Error: Empty append for '{full_uri}'. Provide non-empty text to append."
             memory = await graph.get_memory_by_path(path, domain, namespace=get_namespace())
             if not memory:
                 return f"Error: Memory at '{full_uri}' not found."
@@ -758,13 +770,10 @@ async def update_memory(
             current_content = memory.get("content", "")
             content = current_content + append
 
-        # Reject no-op requests where no valid update fields were provided.
-        # This catches malformed tool calls (e.g. oldString/newString instead
-        # of old_string/new_string) that previously returned a false "Success".
         if content is None and priority is None and disclosure is None:
             return (
                 f"Error: No update fields provided for '{full_uri}'. "
-                f"Use patch mode (old_string + new_string), append mode (append), "
+                f"Use replace mode (old + new), append mode (append), "
                 f"or metadata fields (priority/disclosure)."
             )
 
