@@ -110,7 +110,7 @@ def build_web_app(*, extra_routes=None, extra_prefixes=None, lifespan=None):
     api = FastAPI(
         title="Nocturne Memory API",
         description="AI长期记忆知识图谱后端",
-        version="2.5.5",
+        version="2.5.6",
         docs_url="/docs",
         openapi_url="/openapi.json",
     )
