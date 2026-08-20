@@ -63,80 +63,7 @@ from locales import t
 
 
 from web_app import FRONTEND_DIR, build_web_app
-FRONTEND_SRC = FRONTEND_DIR.parent
-
-
-async def _ensure_frontend_built():
-    """Auto-build the frontend dashboard on first run or when code updates."""
-    if not (FRONTEND_SRC / "package.json").is_file():
-        return
-    if os.environ.get("SKIP_FRONTEND_BUILD", "").lower() in ("true", "1", "yes"):
-        return
-    if not shutil.which("npm"):
-        print(t("startup.npm_not_found"), file=sys.stderr)
-        return
-
-    # Check version from package.json to detect frontend updates
-    current_version = "unknown"
-    try:
-        package_json_path = FRONTEND_SRC / "package.json"
-        if package_json_path.is_file():
-            import json
-            content = package_json_path.read_text(encoding="utf-8")
-            pkg_data = json.loads(content)
-            if "version" in pkg_data:
-                current_version = pkg_data["version"]
-    except Exception:
-        pass
-
-    build_marker = FRONTEND_DIR / ".build_version"
-    
-    if FRONTEND_DIR.is_dir():
-        if build_marker.is_file():
-            try:
-                last_build_version = build_marker.read_text().strip()
-                if last_build_version == current_version and current_version != "unknown":
-                    return  # Up to date
-            except Exception:
-                pass
-        # If marker is missing or doesn't match, we need to rebuild.
-
-    print(t("startup.building"), file=sys.stderr)
-    try:
-        steps = [
-            (t("startup.installing_deps"), "npm install --no-fund --no-audit"),
-            (t("startup.compiling"), "npm run build"),
-        ]
-
-        for label, cmd in steps:
-            print(t("startup.step_progress").format(label=label), file=sys.stderr)
-            result = await asyncio.to_thread(
-                subprocess.run,
-                cmd,
-                cwd=str(FRONTEND_SRC),
-                capture_output=True,
-                text=True,
-                shell=True,
-            )
-            if result.returncode != 0:
-                err = result.stderr.strip() or result.stdout.strip()
-                print(
-                    t("startup.build_failed").format(
-                        cmd=cmd, exit_code=result.returncode, error_msg=err),
-                    file=sys.stderr,
-                )
-                return
-
-        # Write the marker after successful build
-        if current_version != "unknown" and FRONTEND_DIR.is_dir():
-            build_marker.write_text(current_version)
-
-        print(t("startup.admin_ready"), file=sys.stderr)
-    except Exception as e:
-        print(
-            t("startup.build_error").format(error=str(e)),
-            file=sys.stderr,
-        )
+from frontend_builder import get_frontend_builder
 
 
 @contextlib.asynccontextmanager
@@ -157,7 +84,7 @@ async def lifespan(server: FastMCP):
         await preset_service.auto_promote_from_config()
 
         # Launch frontend build in background so we don't block MCP handshake
-        asyncio.create_task(_ensure_frontend_built())
+        get_frontend_builder().ensure_built_background()
 
         # In stdio mode, spin up an embedded HTTP server for the admin UI.
         # run_sse.py sets _NOCTURNE_SSE_MODE to prevent a duplicate.

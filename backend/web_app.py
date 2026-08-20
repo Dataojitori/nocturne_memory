@@ -26,12 +26,12 @@ import config as _cfg
 from auth import BearerTokenAuthMiddleware, get_cors_config
 from namespace_middleware import NamespaceMiddleware
 from locales.middleware import LocaleMiddleware
-from api import review_router, browse_router, maintenance_router, settings_router, presets_router
+from api import review_router, browse_router, maintenance_router, settings_router, presets_router, build_router
 from health import router as health_router, health_check
 from config import ConfigWriteError
 from db import get_db_manager, close_db
+from frontend_builder import FRONTEND_DIR, get_frontend_builder
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -48,6 +48,9 @@ async def default_lifespan(app: Starlette):
         preset_service = get_preset_service()
         await preset_service.auto_promote_from_config()
         print("Presets auto-promoted from config (default lifespan).")
+
+        # Launch frontend build in background
+        get_frontend_builder().ensure_built_background()
     except Exception as e:
         print(f"Failed to initialize database or presets: {e}", file=sys.stderr)
 
@@ -74,11 +77,23 @@ class _Fallback:
             await self.backend(scope, receive, send)
             return
             
-        if not self.dist.is_dir():
-            from starlette.responses import PlainTextResponse
-            await PlainTextResponse(
-                "Admin UI is building or missing. Please refresh in a moment...", 
-                status_code=503
+        builder = get_frontend_builder()
+        if not builder.is_ready():
+            from auth import get_api_token, verify_token
+            from starlette.requests import Request
+            from starlette.responses import HTMLResponse
+
+            req = Request(scope, receive=receive)
+            auth_err = await verify_token(req)
+            is_authenticated = (auth_err is None)
+            token_configured = bool(get_api_token())
+
+            await HTMLResponse(
+                builder.render_diagnostic_html(
+                    is_authenticated=is_authenticated,
+                    token_configured=token_configured,
+                ),
+                status_code=200
             )(scope, receive, send)
             return
 
@@ -94,8 +109,22 @@ class _Fallback:
         if index_file.is_file():
             await FileResponse(index_file)(scope, receive, send)
         else:
-            from starlette.responses import PlainTextResponse
-            await PlainTextResponse("Admin UI missing index.html.", status_code=404)(scope, receive, send)
+            from auth import get_api_token, verify_token
+            from starlette.requests import Request
+            from starlette.responses import HTMLResponse
+
+            req = Request(scope, receive=receive)
+            auth_err = await verify_token(req)
+            is_authenticated = (auth_err is None)
+            token_configured = bool(get_api_token())
+
+            await HTMLResponse(
+                builder.render_diagnostic_html(
+                    is_authenticated=is_authenticated,
+                    token_configured=token_configured,
+                ),
+                status_code=200
+            )(scope, receive, send)
 
 
 def build_web_app(*, extra_routes=None, extra_prefixes=None, lifespan=None):
@@ -128,6 +157,7 @@ def build_web_app(*, extra_routes=None, extra_prefixes=None, lifespan=None):
     api.include_router(maintenance_router)
     api.include_router(settings_router)
     api.include_router(presets_router)
+    api.include_router(build_router)
 
     routes = list(extra_routes or [])
     routes.append(Mount("/api", app=api))
@@ -143,7 +173,15 @@ def build_web_app(*, extra_routes=None, extra_prefixes=None, lifespan=None):
     inner = Starlette(routes=routes, lifespan=app_lifespan)
     authed = NamespaceMiddleware(
         LocaleMiddleware(
-            BearerTokenAuthMiddleware(inner, excluded_paths=["/api/health", "/health"])
+            BearerTokenAuthMiddleware(
+                inner,
+                excluded_paths=[
+                    "/api/health",
+                    "/health",
+                    "/api/build-status",
+                    "/api/build/status",
+                ]
+            )
         )
     )
     cors_authed = CORSMiddleware(
