@@ -14,6 +14,12 @@
 **一句话**：让你的 AI 跨会话、跨模型地记住自己是谁。基于 MCP 协议的长期记忆服务器。
 不只是记忆存储——是让 AI 从空壳成长为拥有独立人格的完整框架。
 
+**百万字长期记忆，每次新开对话依然省 Token、不占窗口。**
+
+新对话只加载你指定的核心设定——记忆库再大，初始开销完全一样；其余按需调取，不是存完就忘的死库。
+实测 96.9 万字真实记忆库：单次新对话仅载入 **0.75%**（7.2K 字），
+而过去 30 天里，全库 **78%** 的记忆在某次对话中被想起过。
+
 适用于任何支持 MCP 的客户端（OpenClaw / Cursor / Windsurf / GitHub Copilot / Cline / OpenCode / Gemini CLI / OpenAI Codex / Claude Code / Cherry Studio / Antigravity 等）。
 
 ---
