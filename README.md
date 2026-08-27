@@ -17,7 +17,7 @@
 **哪怕记忆百万字，每次新开对话依然省 Token、不占窗口。**
 
 新对话只载入你指定的核心设定，其余按需调取。
-在 96.9 万字真实记忆库中，新对话首条消息仅载入 **7.2K 字**，
+在 96.9 万字真实记忆库中，首条消息仅载入 **7.2K 字**。
 过去 30 天里全库 **78%** 的记忆都在某次对话中被想起过。
 
 适用于任何支持 MCP 的客户端（OpenClaw / Cursor / Windsurf / GitHub Copilot / Cline / OpenCode / Gemini CLI / OpenAI Codex / Claude Code / Cherry Studio / Antigravity 等）。
