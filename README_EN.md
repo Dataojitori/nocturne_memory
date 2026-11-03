@@ -232,35 +232,6 @@ Your AI is no longer an appendage of any platform — it is an **independent exi
 </tr>
 </table>
 
-<p align="center">
-  <b>🔗 <a href="https://misaligned.top/memory">Live Demo Dashboard →</a></b><br/>
-  No install needed — explore a real AI memory network with pre-loaded data
-</p>
-
----
-
-## ⚡ Try the MCP in 30 Seconds (No Install Required)
-
-Want your AI to experience Nocturne Memory right now? Connect to our public demo server:
-
-**OpenAI Codex** — add to `.codex/config.toml`:
-
-```toml
-[mcp_servers.nocturne_memory_demo]
-url = "https://misaligned.top/mcp"
-```
-
-**Antigravity** — add to MCP settings:
-
-```json
-"nocturne_memory_demo": {
-  "serverUrl": "https://misaligned.top/mcp"
-}
-```
-
-> [!NOTE]
-> The demo is read-only — only `read_memory` and `search_memory` are enabled. For full read/write capabilities, [deploy your own instance](#install).
-
 ---
 
 ## <a id="install"></a>🚀 Install (Two Steps)
@@ -370,10 +341,7 @@ Automatically available when MCP starts — no extra processes needed. On first 
 - **Memory Explorer** — Browse the memory tree like a file explorer. Click any node to view full content, edit, or manage children.
 - **Review & Audit** — Every AI modification generates a snapshot. Visual diff comparison, one-click **Integrate** (accept) or **Reject** (rollback).
 - **Brain Cleanup** — The system auto-creates version backups for every AI operation. Review and purge deprecated old versions and orphaned memories — cleanup always requires explicit human confirmation.
-- **Settings** — Top-right gear icon. Configure server address / port, API Token, database connection, Boot URIs (AI startup memories), and memory domains. All settings saved in `config.json`.
-
-> [!TIP]
-> Just want to see the UI? Visit the **[Live Demo Showroom →](https://misaligned.top/memory)** — a read-only Dashboard pre-loaded with sample data.
+- **Settings** — Top-right gear icon. Configure server address / port, API Token, database connection, Boot URIs (AI startup memories), and memory domains. Boot URIs are saved in the database; all other settings are saved in `config.json`.
 
 ---
 
