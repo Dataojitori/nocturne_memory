@@ -2,7 +2,7 @@
 
 用户想把 Nocturne Memory 里的记忆搬进 Horon。
 
-搬家的是 Horon 仓库（https://github.com/Dataojitori/horon）里的两个脚本：
+搬家用 [Horon 仓库](https://github.com/Dataojitori/horon)里的两个脚本：
 
 - `memory_migration.py`：把记忆搬进 Horon。
 - `seed_transitions.py`：按旧库里记忆之间的关系，给搬进来的记忆建初始推荐。
