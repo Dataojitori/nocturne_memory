@@ -13,25 +13,22 @@
 **In one line**: Let your AI remember who it is — across sessions, across models. An MCP-based long-term memory server.
 Not just memory storage — a complete framework for developing an AI from an empty shell into an independent personality.
 
----
-
-### 🆕 We built the upgrade to Nocturne Memory: [Horon](https://github.com/Dataojitori/horon)
-
-<a href="https://github.com/Dataojitori/horon"><img src="https://raw.githubusercontent.com/Dataojitori/horon/master/docs/pv/banner/horon-banner.svg" alt="Horon" width="100%"></a>
-
-Everything Nocturne Memory does, Horon does, plus what it couldn't. Simpler to use, a better experience, and more powerful.
-
-Every memory in Nocturne Memory can be moved to Horon. [Have your AI move your memories over →](docs/MIGRATE_TO_HORON.md)
-
-### ☁️ Horon also runs in the cloud: [AISoulKeeper](https://aisoulkeeper.com)
-
-<a href="https://aisoulkeeper.com"><img src="https://aisoulkeeper.com/static/og-home-1103.png" alt="AISoulKeeper: Cloud memory for your AI. One memory, shared across every app." width="60%"></a>
-
-Nothing to install, works across platforms, and free. You can download your memory and leave AISoulKeeper at any time.
-
-From now on, Nocturne Memory gets maintenance updates only; new features will come in Horon and AISoulKeeper.
-
----
+> [!IMPORTANT]
+> ### 🆕 We built the upgrade to Nocturne Memory: [Horon](https://github.com/Dataojitori/horon)
+>
+> <a href="https://github.com/Dataojitori/horon"><img src="https://raw.githubusercontent.com/Dataojitori/horon/master/docs/pv/banner/horon-banner.svg" alt="Horon" width="100%"></a>
+>
+> Everything Nocturne Memory does, Horon does, plus what it couldn't. Simpler to use, a better experience, and more powerful.
+>
+> Every memory in Nocturne Memory can be moved to Horon. [Have your AI move your memories over →](docs/MIGRATE_TO_HORON.md)
+>
+> ### ☁️ Horon also runs in the cloud: [AISoulKeeper](https://aisoulkeeper.com)
+>
+> <a href="https://aisoulkeeper.com"><img src="https://aisoulkeeper.com/static/og-home-1103.png" alt="AISoulKeeper: Cloud memory for your AI. One memory, shared across every app." width="60%"></a>
+>
+> Nothing to install, works across platforms, and free. You can download your memory and leave AISoulKeeper at any time.
+>
+> From now on, Nocturne Memory gets maintenance updates only; new features will come in Horon and AISoulKeeper.
 
 **Even with a million characters of memory, every new chat still saves tokens and spares your context window.**
 
