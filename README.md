@@ -14,6 +14,26 @@
 **一句话**：让你的 AI 跨会话、跨模型地记住自己是谁。基于 MCP 协议的长期记忆服务器。
 不只是记忆存储——是让 AI 从空壳成长为拥有独立人格的完整框架。
 
+---
+
+### 🆕 我们开发了 Nocturne Memory 的升级版：[Horon](https://github.com/Dataojitori/horon)
+
+<a href="https://github.com/Dataojitori/horon"><img src="https://raw.githubusercontent.com/Dataojitori/horon/master/docs/pv/banner/horon-banner.svg" alt="Horon" width="100%"></a>
+
+Nocturne Memory 能做的，Horon 都能做；做不到的，Horon 也能做。使用更简单，体验更好，功能更强大。
+
+Nocturne Memory 内的记忆可以全量迁移到 Horon，[让 AI 把旧记忆搬过去 →](docs/MIGRATE_TO_HORON.md)
+
+### ☁️ Horon 还能在云端使用：[AISoulKeeper](https://aisoulkeeper.com)
+
+<a href="https://aisoulkeeper.com"><img src="https://aisoulkeeper.com/static/og-home-1103.png" alt="AISoulKeeper: Cloud memory for your AI. One memory, shared across every app." width="60%"></a>
+
+无需安装，多平台可用，免费，你还可以在任何时候下载你的记忆脱离 AISoulKeeper 平台。
+
+至此 Nocturne Memory 只做维护性更新，Horon 和 AISoulKeeper 将接棒进行功能性更新。
+
+---
+
 **哪怕记忆百万字，每次新开对话依然省 Token、不占窗口。**
 
 新对话只载入你指定的核心设定，其余按需调取。  
