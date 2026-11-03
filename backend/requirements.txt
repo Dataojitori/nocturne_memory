@@ -13,6 +13,6 @@ filelock>=3.10.0       # File locking for JSON snapshot concurrency
 Pillow>=10.0.0         # PNG character card metadata extraction
 pypinyin>=0.50.0       # Chinese title transliteration for imported cards
 # Database dependencies
-sqlalchemy>=2.0.0
+sqlalchemy[asyncio]>=2.0.0  # SQLAlchemy 2.1 no longer pulls in greenlet by default; the async engine needs it
 aiosqlite>=0.19.0    # SQLite async driver
 asyncpg>=0.29.0      # PostgreSQL async driver
